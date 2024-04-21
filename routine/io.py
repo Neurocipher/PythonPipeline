@@ -1,6 +1,7 @@
 import numpy as np
 import tifffile as tiff
 import xarray as xr
+from scipy.io import loadmat
 
 from .utilities import normalize
 
@@ -32,4 +33,18 @@ def read_templates(im_ms, im_conf, flip=True, norm=True):
             },
             name="conf-raw",
         ),
+    )
+
+
+def load_refmat(matfile: str):
+    mat = loadmat(matfile)
+    return xr.DataArray(mat["hek"], dims=["fluo", "spec"]), xr.DataArray(
+        mat["PD"], dims=["dist", "beta"]
+    )
+
+
+def load_cellsmat(matfile: str):
+    mat = loadmat(matfile)
+    return xr.DataArray(mat["cells_line"], dims=["unit", "spec"]), xr.DataArray(
+        mat["cells_n_line"], dims=["unit", "spec"]
     )
