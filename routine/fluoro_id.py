@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 
 
 def fit_spec(spec: xr.DataArray, spec_ref: xr.DataArray):
-    lm = LinearRegression(fit_intercept=False, positive=True)
+    lm = LinearRegression(fit_intercept=False)
     lm.fit(spec_ref.transpose("spec", "fluo"), spec.transpose("spec", "unit"))
     return xr.DataArray(
         lm.coef_,
