@@ -1,4 +1,5 @@
 # %% imports
+import itertools as itt
 import os
 
 import numpy as np
@@ -28,8 +29,10 @@ DS = {
         "scal_init": 1,
     },
 }
+OUT_PATH = "./intermediate/co-registration"
 FIG_PATH = "./figs/co-registration"
 
+os.makedirs(OUT_PATH, exist_ok=True)
 os.makedirs(FIG_PATH, exist_ok=True)
 
 
@@ -82,8 +85,23 @@ for dsname, dsdat in DS.items():
         norm=True,
     )
     fig.write_html(os.path.join(FIG_PATH, "{}.html".format(dsname)))
+    ds = xr.merge([im_ms, im_conf, im_ms_ps, im_conf_ps, im_ms_reg, ps_ms_reg])
+    ds.to_netcdf(os.path.join(OUT_PATH, "{}.nc".format(dsname)))
     print(
         "data: {}, scale: {}, angle: {}, shift: {}".format(
             dsname, 1 / tx.GetScale(), np.rad2deg(tx.GetAngle()), tx.GetTranslation()
         )
     )
+
+# %% compute correlation across ds
+for ds1_name, ds2_name in itt.product(DS.keys(), repeat=2):
+    ds1 = xr.open_dataset(os.path.join(OUT_PATH, "{}.nc".format(ds1_name)))
+    ds2 = xr.open_dataset(os.path.join(OUT_PATH, "{}.nc".format(ds2_name)))
+    im1 = ds1["ms-reg"].dropna("width", how="all").dropna("height", how="all")
+    im2 = ds2["conf-raw"].dropna("width", how="all").dropna("height", how="all")
+    if (
+        im1.sizes["height"] == im2.sizes["height"]
+        and im1.sizes["width"] == im2.sizes["width"]
+    ):
+        corr = np.corrcoef(np.array(im1).reshape(-1), np.array(im2).reshape(-1))[0, 1]
+        print("{}-{}: {:.3f}".format(ds1_name, ds2_name, corr))
