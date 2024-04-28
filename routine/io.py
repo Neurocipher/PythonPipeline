@@ -39,7 +39,7 @@ def read_templates(im_ms, im_conf, flip=True, norm=True):
 def load_refmat(matfile: str):
     mat = loadmat(matfile)
     return xr.DataArray(mat["hek"], dims=["fluo", "spec"]), xr.DataArray(
-        mat["PD"], dims=["dist", "beta"]
+        mat["PD"], dims=["dist", "fluo"], coords={"dist": ["raw", "norm"]}
     )
 
 

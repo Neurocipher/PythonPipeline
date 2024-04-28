@@ -31,18 +31,52 @@ def max_agg_beta(*args):
     )
 
 
-def classify_unit(udf: pd.DataFrame, zthres, nfluo, exc_lab=[]):
-    udf = (
-        udf[(~udf["fluo"].isin(exc_lab)) & (udf["beta"] > zthres)]
-        .sort_values("beta", ascending=False)
+def classify_single_unit(udf: pd.DataFrame, zthres):
+    udf = udf.set_index("fluo")
+    udf = udf[udf["beta"] > zthres].sort_values("beta", ascending=False).reset_index()
+    labs = []
+    for i in range(len(udf)):
+        labs.append(
+            pd.Series({"lab": udf.loc[i, "fluo"], "beta": udf.loc[i, "beta"], "ord": i})
+        )
+    if len(labs) > 0:
+        return pd.concat(labs, axis="columns").T.set_index("lab")
+    else:
+        return pd.DataFrame([{"lab": np.nan, "beta": np.nan, "ord": np.nan}]).set_index(
+            "lab"
+        )
+
+
+def classify_units(df: pd.DataFrame, src=None, **kwargs):
+    res = (
+        df.groupby("unit")
+        .apply(classify_single_unit, include_groups=False, **kwargs)
         .reset_index()
     )
-    labs = dict()
-    for i in range(nfluo):
-        try:
-            labs["lab{}".format(i)] = udf.loc[i, "fluo"]
-            labs["beta{}".format(i)] = udf.loc[i, "beta"]
-        except KeyError:
-            labs["lab{}".format(i)] = np.nan
-            labs["beta{}".format(i)] = np.nan
-    return pd.Series(labs)
+    if src is not None:
+        res["source"] = src
+    return res
+
+
+def merge_passes(udf: pd.DataFrame, nfluo: int, return_pivot=True):
+    udf["source"] = pd.Categorical(udf["source"], ["p1", "p2_raw", "p2_norm"])
+    udf = (
+        udf.dropna()
+        .sort_values(["source", "ord"])
+        .drop_duplicates("lab")
+        .reset_index(drop=True)
+    )
+    if return_pivot:
+        lab_mg = dict()
+        for i in range(nfluo):
+            try:
+                lab_mg["lab-{}".format(i)] = udf.loc[i, "lab"]
+                lab_mg["beta-{}".format(i)] = udf.loc[i, "beta"]
+                lab_mg["src-{}".format(i)] = udf.loc[i, "source"]
+            except KeyError:
+                lab_mg["lab-{}".format(i)] = np.nan
+                lab_mg["beta-{}".format(i)] = np.nan
+                lab_mg["src-{}".format(i)] = np.nan
+        return pd.Series(lab_mg)
+    else:
+        return udf
