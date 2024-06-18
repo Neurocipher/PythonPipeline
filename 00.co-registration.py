@@ -1,6 +1,7 @@
 # %% imports
 import itertools as itt
 import os
+import pickle as pkl
 
 import numpy as np
 import xarray as xr
@@ -87,6 +88,8 @@ for dsname, dsdat in DS.items():
     fig.write_html(os.path.join(FIG_PATH, "{}.html".format(dsname)))
     ds = xr.merge([im_ms, im_conf, im_ms_ps, im_conf_ps, im_ms_reg, ps_ms_reg])
     ds.to_netcdf(os.path.join(OUT_PATH, "{}.nc".format(dsname)))
+    with open(os.path.join(OUT_PATH, "tx-{}.pkl".format(dsname)), "wb") as tx_file:
+        pkl.dump(tx, tx_file)
     print(
         "data: {}, scale: {}, angle: {}, shift: {}".format(
             dsname, 1 / tx.GetScale(), np.rad2deg(tx.GetAngle()), tx.GetTranslation()
