@@ -12,3 +12,9 @@ dependencies:
   - plotly
   - simpleitk
   - netcdf4
+  - holoviews
+  - aicsimageio
+  - fsspec
+  - pip
+  - pip:
+      - aicspylibczi
