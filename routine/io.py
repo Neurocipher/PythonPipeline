@@ -1,6 +1,10 @@
+import os
+
+import cv2
 import numpy as np
 import tifffile as tiff
 import xarray as xr
+from aicsimageio import AICSImage
 from scipy.io import loadmat
 
 from .utilities import normalize
@@ -47,4 +51,61 @@ def load_cellsmat(matfile: str):
     mat = loadmat(matfile)
     return xr.DataArray(mat["cells_line"], dims=["unit", "spec"]), xr.DataArray(
         mat["cells_n_line"], dims=["unit", "spec"]
+    )
+
+
+def load_czi(path, n_exclude=2, specs=["405", "488", "514", "561", "594", "639"]):
+    czi_files = list(filter(lambda fn: fn.endswith(".czi"), os.listdir(path)))
+    arr_ls = []
+    for spec in specs:
+        cur_czi = list(
+            filter(lambda fn: spec in fn[:6], czi_files)
+        )  # TODO: make filename parsing more intelligent
+        assert len(cur_czi) == 1, "CZI files missing or duplicated for {}: {}".format(
+            spec, cur_czi
+        )
+        cur_czi = os.path.join(path, cur_czi[0])
+        cur_im = AICSImage(cur_czi)
+        cur_arr = xr.DataArray(
+            cur_im.get_image_dask_data("XYZC", T=0),
+            dims=["width", "height", "z", "channel"],
+        )
+        if n_exclude:
+            cur_arr = cur_arr.isel(z=slice(n_exclude, -n_exclude))
+        cur_arr = cur_arr.assign_coords(
+            width=np.arange(cur_arr.sizes["width"]),
+            height=np.arange(cur_arr.sizes["height"]),
+            z=np.arange(cur_arr.sizes["z"]),
+            channel=[
+                "{}-{:0>2}".format(spec, i) for i in range(cur_arr.sizes["channel"])
+            ],
+            channel_group=("channel", [spec] * cur_arr.sizes["channel"]),
+        )
+        arr_ls.append(cur_arr)
+    return xr.concat(arr_ls, dim="channel")
+
+
+def load_roimat(matfile: str, ref_im: xr.DataArray):
+    mat = loadmat(matfile)
+    rois = mat["ROIs"].squeeze()
+    A = np.zeros((len(rois), ref_im.sizes["width"], ref_im.sizes["height"]))
+    for ir, roi in enumerate(rois):
+        # edges = np.zeros_like(A[ir, :, :])
+        # edges[roi[:, 0], roi[:, 1]] = 1
+        filled = cv2.drawContours(
+            A[ir, :, :],
+            [roi[:, ::-1].astype(np.int32)],
+            contourIdx=-1,
+            color=1,
+            thickness=cv2.FILLED,
+        )
+        A[ir, :, :] = filled
+    return xr.DataArray(
+        A,
+        dims=["unit", "width", "height"],
+        coords={
+            "unit": np.arange(A.shape[0]),
+            "width": ref_im.coords["width"],
+            "height": ref_im.coords["height"],
+        },
     )
