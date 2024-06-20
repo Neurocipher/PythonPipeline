@@ -1,8 +1,10 @@
 import cv2
 import holoviews as hv
+import matplotlib.pyplot as plt
 import numpy as np
 import plotly.express as px
 import xarray as xr
+from matplotlib import cm
 
 from .utilities import normalize
 
@@ -49,3 +51,34 @@ def plotA_contour(A: xr.DataArray, im: xr.DataArray, cmap=None, im_opts=None):
                 pth = pth.opts(color=cmap[uid])
             im = im * pth
     return im
+
+
+def im_overlay(imA, imB, cmapA, cmapB, brt_offset=0):
+    im_pcolA = np.clip(
+        cm.ScalarMappable(cmap=cmapA).to_rgba(normalize(np.nan_to_num(imA)))
+        + brt_offset,
+        0,
+        1,
+    )
+    im_pcolB = np.clip(
+        cm.ScalarMappable(cmap=cmapB).to_rgba(normalize(np.nan_to_num(imB)))
+        + brt_offset,
+        0,
+        1,
+    )
+    return np.clip(im_pcolA + im_pcolB, 0, 1)
+
+
+def plotA_contour_mpl(
+    A: xr.DataArray, im: xr.DataArray, cmap=None, cnt_kws=dict(), im_cmap=None, ax=None
+):
+    if ax is None:
+        ax = plt.gca()
+    ax.imshow(im, cmap=im_cmap)
+    for uid in A.coords["unit"].values:
+        curA = (np.array(A.sel(unit=uid)) > 0).astype(np.uint8)
+        if cmap is not None:
+            ax.contour(curA, colors=cmap[uid], **cnt_kws)
+        else:
+            ax.contour(curA, **cnt_kws)
+    return ax
