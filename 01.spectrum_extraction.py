@@ -107,5 +107,13 @@ for dsname, dsdat in DS.items():
         output_core_dims=[["channel"]],
         vectorize=True,
     ).rename("spec_norm")
-    spec_ds = xr.merge([specs, specs_norm])
+    spec_ds = xr.merge(
+        [
+            specs,
+            specs_norm,
+            ims_conf.rename("ims_conf"),
+            ims_chns.rename("ims_chns"),
+            rois.rename("rois"),
+        ]
+    )
     spec_ds.to_netcdf(os.path.join(OUT_PATH, "{}.nc".format(dsname)))
