@@ -66,27 +66,50 @@ for dsname, dsdat in DS.items():
         ang_nstp=3,
         lr=1e-3,
     )
+    im_ms_exh = xr.DataArray(
+        apply_tx(im_ms, tx_exh, ref=im_conf.data, fill=np.nan),
+        dims=["height", "width"],
+        coords={"height": im_conf.coords["height"], "width": im_conf.coords["width"]},
+        name="ms-exh",
+    )
+    ps_ms_exh = xr.DataArray(
+        apply_tx(im_ms_ps, tx_exh, ref=im_conf_ps, fill=np.nan),
+        dims=["height", "width"],
+        coords={"height": im_conf.coords["height"], "width": im_conf.coords["width"]},
+        name="ps-exh",
+    )
     im_ms_reg = xr.DataArray(
-        apply_tx(im_ms, tx, ref=im_conf.data),
+        apply_tx(im_ms, tx, ref=im_conf.data, fill=np.nan),
         dims=["height", "width"],
         coords={"height": im_conf.coords["height"], "width": im_conf.coords["width"]},
         name="ms-reg",
     )
     ps_ms_reg = xr.DataArray(
-        apply_tx(im_ms_ps, tx, ref=im_conf_ps),
+        apply_tx(im_ms_ps, tx, ref=im_conf_ps, fill=np.nan),
         dims=["height", "width"],
         coords={"height": im_conf.coords["height"], "width": im_conf.coords["width"]},
         name="ps-reg",
     )
-    ps_diff = (im_conf_ps - ps_ms_reg).rename("ps-diff")
-    im_diff = (im_conf - im_ms_reg).rename("diff")
+    ps_diff = (im_conf_ps - ps_ms_reg.fillna(0)).rename("ps-diff")
+    im_diff = (im_conf - im_ms_reg.fillna(0)).rename("diff")
     fig = plot_ims(
         [im_ms, im_ms_ps, im_conf, im_conf_ps, im_ms_reg, ps_diff, im_diff],
         facet_col_wrap=4,
         norm=True,
     )
     fig.write_html(os.path.join(FIG_PATH, "{}.html".format(dsname)))
-    ds = xr.merge([im_ms, im_conf, im_ms_ps, im_conf_ps, im_ms_reg, ps_ms_reg])
+    ds = xr.merge(
+        [
+            im_ms,
+            im_conf,
+            im_ms_ps,
+            im_conf_ps,
+            im_ms_reg,
+            ps_ms_reg,
+            im_ms_exh,
+            ps_ms_exh,
+        ]
+    )
     ds.to_netcdf(os.path.join(OUT_PATH, "{}.nc".format(dsname)))
     with open(os.path.join(OUT_PATH, "tx-{}.pkl".format(dsname)), "wb") as tx_file:
         pkl.dump(tx, tx_file)
