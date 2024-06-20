@@ -12,14 +12,18 @@ def process_temp(
     im: np.ndarray, med_wnd=5, back_wnd=(101, 101), blk_wnd=(11, 11), q_thres=None
 ):
     im_ps = cv2.medianBlur(im.astype(np.float32), med_wnd).astype(float)
-    back = cv2.blur(im_ps, back_wnd)
-    im_ps = im_ps - back
+    im_ps = remove_background(im_ps, back_wnd)
     krn = cv2.getStructuringElement(cv2.MORPH_RECT, blk_wnd)
     im_ps = cv2.morphologyEx(im_ps, cv2.MORPH_BLACKHAT, krn)
     if q_thres is not None:
         q = np.quantile(im_ps, q_thres)
         im_ps[im_ps < q] = im_ps.min()
     return normalize(im_ps)
+
+
+def remove_background(im, back_wnd):
+    back = cv2.blur(im, back_wnd)
+    return im - back
 
 
 def apply_tx(
