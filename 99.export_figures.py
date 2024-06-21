@@ -117,31 +117,31 @@ for dsname, dsdat in DS.items():
     axs[0].set_title("561nm channel")
     plotA_contour_mpl(
         rois,
-        normalize(ims_chns.sel(channel_group="561"), (0.01, 0.998)),
-        im_cmap="viridis",
+        normalize(ims_chns.sel(channel_group="561"), (0.01, 0.999)),
+        im_cmap=cc.cm["kr"],
         cnt_kws={"linewidths": 0.2, "colors": "gray"},
         ax=axs[0],
     )
     plotA_contour_mpl(
         rois.sel(unit=[exp_roi]),
-        normalize(ims_chns.sel(channel_group="561"), (0.01, 0.998)),
-        im_cmap="viridis",
-        cnt_kws={"linewidths": 0.5, "colors": "red"},
+        normalize(ims_chns.sel(channel_group="561"), (0.01, 0.999)),
+        im_cmap=cc.cm["kr"],
+        cnt_kws={"linewidths": 0.5, "colors": "royalblue"},
         ax=axs[0],
     )
     axs[1].set_title("594nm channel")
     plotA_contour_mpl(
         rois,
         normalize(ims_chns.sel(channel_group="594"), (0.01, 0.998)),
-        im_cmap="viridis",
+        im_cmap=cc.cm["kr"],
         cnt_kws={"linewidths": 0.2, "colors": "gray"},
         ax=axs[1],
     )
     plotA_contour_mpl(
         rois.sel(unit=[exp_roi]),
         normalize(ims_chns.sel(channel_group="594"), (0.01, 0.998)),
-        im_cmap="viridis",
-        cnt_kws={"linewidths": 0.5, "colors": "red"},
+        im_cmap=cc.cm["kr"],
+        cnt_kws={"linewidths": 0.5, "colors": "royalblue"},
         ax=axs[1],
     )
     for ax in axs.flatten():
