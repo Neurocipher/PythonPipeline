@@ -114,7 +114,8 @@ for dsname, dsdat in DS.items():
     fig_path = os.path.join(FIG_PATH, "{}".format(dsname))
     chn_cmap = {
         "405": cc.cm["kb"],
-        "488": cc.cm["kg"],
+        "488": cc.cm["CET_CBTL3"],
+        "514": cc.cm["kg"],
         "561": cc.cm["CET_CBL4"],
         "594": "copper",
         "639": cc.cm["kr"],
