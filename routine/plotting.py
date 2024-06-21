@@ -70,15 +70,21 @@ def im_overlay(imA, imB, cmapA, cmapB, brt_offset=0):
 
 
 def plotA_contour_mpl(
-    A: xr.DataArray, im: xr.DataArray, cmap=None, cnt_kws=dict(), im_cmap=None, ax=None
+    A: xr.DataArray,
+    im: xr.DataArray = None,
+    cmap=None,
+    cnt_kws=dict(),
+    im_cmap=None,
+    ax=None,
 ):
     if ax is None:
         ax = plt.gca()
-    ax.imshow(im, cmap=im_cmap)
+    if im is not None:
+        ax.imshow(im, cmap=im_cmap)
     for uid in A.coords["unit"].values:
-        curA = (np.array(A.sel(unit=uid)) > 0).astype(np.uint8)
+        curA = (np.array(A.sel(unit=uid)) > 0).astype(bool)
         if cmap is not None:
-            ax.contour(curA, colors=cmap[uid], **cnt_kws)
+            ax.contour(curA, levels=1, colors=cmap[uid], **cnt_kws)
         else:
-            ax.contour(curA, **cnt_kws)
+            ax.contour(curA, levels=1, **cnt_kws)
     return ax

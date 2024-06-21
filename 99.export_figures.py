@@ -21,12 +21,9 @@ DS = {
 }
 FIG_PATH = "./figs/export"
 
-# %% export plots
+# %% export registration plots
 for dsname, dsdat in DS.items():
-    # load data
     reg_ds = xr.open_dataset(dsdat["reg_ds"])
-    spec_ds = xr.open_dataset(dsdat["spec_ds"])
-    # plot registration
     fig_path = os.path.join(FIG_PATH, "{}".format(dsname))
     os.makedirs(fig_path, exist_ok=True)
     if dsdat["use_raw"]:
@@ -110,41 +107,42 @@ for dsname, dsdat in DS.items():
     fig.savefig(
         os.path.join(fig_path, "registration.svg"), dpi=500, bbox_inches="tight"
     )
-    # plot rois
-    fig, axs = plt.subplots(ncols=2, figsize=(10, 5))
-    rois, ims_chns = spec_ds["rois"], spec_ds["ims_chns"]
+
+# %% export example plots
+for dsname, dsdat in DS.items():
+    spec_ds = xr.open_dataset(dsdat["spec_ds"])
+    fig_path = os.path.join(FIG_PATH, "{}".format(dsname))
+    chn_cmap = {
+        "405": cc.cm["kb"],
+        "488": cc.cm["kg"],
+        "561": cc.cm["CET_CBL4"],
+        "594": "copper",
+        "639": cc.cm["kr"],
+    }
+    rois, ims_chns = (spec_ds["rois"].compute() > 0).astype(bool), spec_ds[
+        "ims_chns"
+    ].compute()
     exp_roi = 27
-    axs[0].set_title("561nm channel")
-    plotA_contour_mpl(
-        rois,
-        normalize(ims_chns.sel(channel_group="561"), (0.01, 0.999)),
-        im_cmap=cc.cm["kr"],
-        cnt_kws={"linewidths": 0.2, "colors": "gray"},
-        ax=axs[0],
-    )
-    plotA_contour_mpl(
-        rois.sel(unit=[exp_roi]),
-        normalize(ims_chns.sel(channel_group="561"), (0.01, 0.999)),
-        im_cmap=cc.cm["kr"],
-        cnt_kws={"linewidths": 0.5, "colors": "royalblue"},
-        ax=axs[0],
-    )
-    axs[1].set_title("594nm channel")
-    plotA_contour_mpl(
-        rois,
-        normalize(ims_chns.sel(channel_group="594"), (0.01, 0.998)),
-        im_cmap=cc.cm["kr"],
-        cnt_kws={"linewidths": 0.2, "colors": "gray"},
-        ax=axs[1],
-    )
-    plotA_contour_mpl(
-        rois.sel(unit=[exp_roi]),
-        normalize(ims_chns.sel(channel_group="594"), (0.01, 0.998)),
-        im_cmap=cc.cm["kr"],
-        cnt_kws={"linewidths": 0.5, "colors": "royalblue"},
-        ax=axs[1],
-    )
-    for ax in axs.flatten():
+    for cur_chn, cur_cmap in chn_cmap.items():
+        fig, ax = plt.subplots(figsize=(5, 5))
+        ax.set_title("{}nm channel".format(cur_chn))
+        plotA_contour_mpl(
+            rois,
+            normalize(ims_chns.sel(channel_group=cur_chn), (0.01, 0.999)),
+            im_cmap=cur_cmap,
+            cnt_kws={"linewidths": 0.3, "colors": "gray"},
+            ax=ax,
+        )
+        plotA_contour_mpl(
+            rois.sel(unit=[exp_roi]),
+            cnt_kws={"linewidths": 0.6, "colors": "white"},
+            ax=ax,
+        )
         ax.set_axis_off()
-    fig.tight_layout()
-    fig.savefig(os.path.join(fig_path, "example_roi.svg"), dpi=500, bbox_inches="tight")
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(fig_path, "example_roi-{}.svg".format(cur_chn)),
+            dpi=500,
+            bbox_inches="tight",
+        )
+        plt.close(fig)
