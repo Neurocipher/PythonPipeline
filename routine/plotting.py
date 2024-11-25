@@ -82,9 +82,19 @@ def plotA_contour_mpl(
     if im is not None:
         ax.imshow(im, cmap=im_cmap)
     for uid in A.coords["unit"].values:
-        curA = (np.array(A.sel(unit=uid)) > 0).astype(bool)
-        if cmap is not None:
-            ax.contour(curA, levels=1, colors=cmap[uid], **cnt_kws)
-        else:
-            ax.contour(curA, levels=1, **cnt_kws)
+        curA = (np.array(A.sel(unit=uid)) > 0).astype(np.uint8)
+        try:
+            cnt = cv2.findContours(curA, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0][
+                0
+            ].squeeze()
+        except IndexError:
+            continue
+        if cnt.ndim > 1:
+            cnt_scale = np.zeros_like(cnt)
+            cnt_scale[:, 0] = A.coords["width"][cnt[:, 0]]
+            cnt_scale[:, 1] = A.coords["height"][cnt[:, 1]]
+            if cmap is not None:
+                ax.plot(cnt_scale[:, 0], cnt_scale[:, 1], color=cmap[uid], **cnt_kws)
+            else:
+                ax.plot(cnt_scale[:, 0], cnt_scale[:, 1], **cnt_kws)
     return ax
