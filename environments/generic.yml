@@ -16,5 +16,6 @@ dependencies:
   - aicsimageio
   - fsspec
   - pip
+  - openpyxl
   - pip:
       - aicspylibczi
