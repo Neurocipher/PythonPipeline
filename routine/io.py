@@ -1,7 +1,9 @@
 import os
+import re
 
 import cv2
 import numpy as np
+import pandas as pd
 import tifffile as tiff
 import xarray as xr
 from aicsimageio import AICSImage
@@ -10,7 +12,38 @@ from scipy.io import loadmat
 from .utilities import normalize
 
 
-def read_templates(im_ms, im_conf, flip=True, norm=True):
+def load_dataset(
+    dpath,
+    ss_csv,
+    id_cols=["animal", "session"],
+    load_temps=True,
+    load_rois=True,
+    load_specs=True,
+):
+    ssdf = pd.read_csv(ss_csv).set_index(id_cols)
+    for idxs, ssrow in ssdf.iterrows():
+        ret_ds = dict()
+        if load_temps:
+            im_ms, im_conf = load_templates(
+                os.path.join(dpath, ssrow["temp_ms"]),
+                os.path.join(dpath, ssrow["temp_conf"]),
+            )
+            ret_ds["im_ms"] = im_ms
+            ret_ds["im_conf"] = im_conf
+        if load_rois:
+            ret_ds["rois"] = load_roitif(
+                os.path.dirname(os.path.join(dpath, ssrow["rois"])),
+                os.path.basename(ssrow["rois"]),
+            )
+        if load_specs:
+            ret_ds["specs"] = load_spectif(
+                os.path.dirname(os.path.join(dpath, ssrow["specs"])),
+                os.path.basename(ssrow["specs"]),
+            )
+        yield idxs, ret_ds, ssrow
+
+
+def load_templates(im_ms, im_conf, flip=False, norm=True):
     im_ms = np.array(tiff.imread(im_ms)).astype(float)
     im_conf = np.array(tiff.imread(im_conf)).astype(float)
     if flip:
@@ -38,6 +71,58 @@ def read_templates(im_ms, im_conf, flip=True, norm=True):
             name="conf-raw",
         ),
     )
+
+
+def load_roitif(dpath, pat):
+    rois = []
+    for tf in os.listdir(dpath):
+        ma = re.search(pat, tf)
+        if ma is not None:
+            roi = np.array(tiff.imread(os.path.join(dpath, tf)))
+            roi = xr.DataArray(
+                roi,
+                dims=["height", "width"],
+                coords={
+                    "height": np.arange(roi.shape[0]),
+                    "width": np.arange(roi.shape[1]),
+                    "roi_id": ma.group(1),
+                },
+            )
+            rois.append(roi)
+    try:
+        return xr.concat(rois, "roi_id").sortby("roi_id").rename("rois")
+    except ValueError:
+        raise FileNotFoundError(
+            "No valid ROIs found under {} with pattern {}".format(dpath, pat)
+        )
+
+
+def load_spectif(dpath, pat):
+    specs = []
+    for tf in os.listdir(dpath):
+        ma = re.search(pat, tf)
+        if ma is not None:
+            chn = ma.group(1)
+            spec = np.array(tiff.imread(os.path.join(dpath, tf)))
+            spec = xr.DataArray(
+                spec,
+                dims=["channel", "height", "width"],
+                coords={
+                    "height": np.arange(spec.shape[1]),
+                    "width": np.arange(spec.shape[2]),
+                    "channel": [
+                        "{}-{:0>2}".format(chn, c) for c in range(spec.shape[0])
+                    ],
+                    "channel_group": ("channel", [chn] * spec.shape[0]),
+                },
+            )
+            specs.append(spec)
+    try:
+        return xr.concat(specs, "channel").sortby("channel").rename("specs")
+    except ValueError:
+        raise FileNotFoundError(
+            "No valid spectrum tifs found under {} with pattern {}".format(dpath, pat)
+        )
 
 
 def load_refmat(matfile: str):

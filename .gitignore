@@ -1,4 +1,6 @@
-/data
+/data/**/*
+!/data/full
+!/data/full/sessions.csv
 /output
 /intermediate
 __pycache__
