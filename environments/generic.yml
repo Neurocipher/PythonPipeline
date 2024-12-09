@@ -17,5 +17,6 @@ dependencies:
   - fsspec
   - pip
   - openpyxl
+  - pydantic
   - pip:
       - aicspylibczi
