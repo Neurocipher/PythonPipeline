@@ -1,19 +1,23 @@
 import re
+from collections.abc import Iterable
 
 import cv2
 import numpy as np
 import pandas as pd
 import SimpleITK as sitk
+from scipy.ndimage import gaussian_filter
 
 from .utilities import normalize
 
 
 def process_temp(
-    im: np.ndarray, med_wnd=5, back_wnd=(101, 101), blk_wnd=(11, 11), q_thres=None
+    im: np.ndarray, dn_sigma=5, back_sigma=50, blk_wnd=(11, 11), q_thres=None
 ):
-    im_ps = cv2.medianBlur(im.astype(np.float32), med_wnd).astype(float)
-    im_ps = remove_background(im_ps, back_wnd)
-    krn = cv2.getStructuringElement(cv2.MORPH_RECT, blk_wnd)
+    if not isinstance(blk_wnd, Iterable):
+        blk_wnd = (blk_wnd, blk_wnd)
+    im_ps = gaussian_filter(im, dn_sigma)
+    im_ps = remove_background(im_ps, back_sigma)
+    krn = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, blk_wnd)
     im_ps = cv2.morphologyEx(im_ps, cv2.MORPH_BLACKHAT, krn)
     if q_thres is not None:
         q = np.quantile(im_ps, q_thres)
@@ -21,8 +25,8 @@ def process_temp(
     return normalize(im_ps)
 
 
-def remove_background(im, back_wnd):
-    back = cv2.blur(im, back_wnd)
+def remove_background(im, back_sigma):
+    back = gaussian_filter(im, back_sigma)
     return im - back
 
 
