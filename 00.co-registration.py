@@ -93,7 +93,7 @@ for dsname, dsdat in DS.items():
     ps_diff = (im_conf_ps - ps_ms_reg.fillna(0)).rename("ps-diff")
     im_diff = (im_conf - im_ms_reg.fillna(0)).rename("diff")
     fig = plot_ims(
-        [im_ms, im_ms_ps, im_conf, im_conf_ps, im_ms_reg, ps_diff, im_diff],
+        [im_ms, im_ms_ps, im_conf, im_conf_ps, im_ms_exh, im_ms_reg, ps_diff, im_diff],
         facet_col_wrap=4,
         norm=True,
     )
