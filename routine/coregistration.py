@@ -104,7 +104,7 @@ def est_sim(
         )
     else:
         reg.SetOptimizerAsGradientDescent(learningRate=lr, numberOfIterations=niter)
-    # reg.SetOptimizerScalesFromPhysicalShift()
+        reg.SetOptimizerScalesFromPhysicalShift()
     param_dict = dict()
     reg.AddCommand(sitk.sitkIterationEvent, lambda: it_callback(reg, param_dict))
     tx = reg.Execute(dst, src).Downcast()
