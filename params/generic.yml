@@ -1,0 +1,17 @@
+# processing parameters for miniscope image
+process_ms:
+  dn_sigma: 1 # denoise gaussian sigma
+  back_sigma: 50 # background gaussian sigma
+  blk_wnd: 11 # feature (blood vessel) window (px)
+# processing parameters for confocal image
+process_conf:
+  dn_sigma: 2 # denoise gaussian sigma
+  back_sigma: 100 # background gaussian sigma
+  blk_wnd: 21 # feature (blood vessel) window (px)
+scal_init: 1.9 # initial scale
+scal_stp: 0.05 # scale search step
+scal_nstp: 2 # number of scale search steps 
+trans_stp: 5 # translation search step (px)
+trans_nstp: 12 # number of translation search steps
+ang_stp: 5 # rotation angle search step (deg)
+ang_nstp: 3 # number of rotation search steps

@@ -1,0 +1,4 @@
+process_ms:
+  blk_wnd: 25
+process_conf:
+  blk_wnd: 51

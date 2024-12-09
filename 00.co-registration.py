@@ -5,31 +5,17 @@ import pickle as pkl
 
 import numpy as np
 import xarray as xr
+import yaml
+from pydantic.v1.utils import deep_update
 
 from routine.coregistration import apply_tx, estimate_tranform, process_temp
-from routine.io import read_templates
+from routine.io import load_dataset
 from routine.plotting import plot_ims
 
-DS = {
-    "21271R": {
-        "ms": "./data/demo/21271R/Inscopix_flip_flip.tif",
-        "conf": "./data/demo/21271R/ZEISS_405.tif",
-        "flip": False,
-        "scal_init": 1.9,
-    },
-    "21272R": {
-        "ms": "./data/demo/21272R/Inscopix_Fip_fip.tif",
-        "conf": "./data/demo/21272R/ZEISS_405.tif",
-        "flip": False,
-        "scal_init": 1.9,
-    },
-    "25607": {
-        "ms": "./data/demo/25607/Insccopix.tif",
-        "conf": "./data/demo/25607/ZEISS_405.tif",
-        "flip": True,
-        "scal_init": 1,
-    },
-}
+IN_DPATH = "./data/full/"
+IN_SS_CSV = "./data/full/sessions.csv"
+IN_PARAM_PATH = "./params/"
+SKIP_EXISTING = False
 OUT_PATH = "./intermediate/co-registration"
 FIG_PATH = "./figs/co-registration"
 
@@ -38,33 +24,44 @@ os.makedirs(FIG_PATH, exist_ok=True)
 
 
 # %% load and coregistration
-for dsname, dsdat in DS.items():
-    im_ms, im_conf = read_templates(dsdat["ms"], dsdat["conf"], flip=dsdat["flip"])
+for (anm, ss), ds, ssrow in load_dataset(
+    IN_DPATH, IN_SS_CSV, load_rois=False, load_specs=False
+):
+    im_ms, im_conf = ds["im_ms"], ds["im_conf"]
+    dsname = "{}-{}".format(anm, ss)
+    if SKIP_EXISTING and os.path.exists(os.path.join(OUT_PATH, "{}.nc".format(dsname))):
+        print("skipping {}".format(dsname))
+        continue
+    param_files = ssrow["param"].split(";")
+    param = dict()
+    for pfile in param_files:
+        with open(os.path.join(IN_PARAM_PATH, pfile)) as pf:
+            param = deep_update(param, yaml.safe_load(pf))
     im_ms_ps = xr.apply_ufunc(
         process_temp,
         im_ms,
         input_core_dims=[["height", "width"]],
         output_core_dims=[["height", "width"]],
-        kwargs={"back_wnd": (61, 61)},
+        kwargs=param["process_ms"],
     ).rename("ms-ps")
     im_conf_ps = xr.apply_ufunc(
         process_temp,
         im_conf,
         input_core_dims=[["height", "width"]],
         output_core_dims=[["height", "width"]],
-        kwargs={"back_wnd": (151, 151)},
+        kwargs=param["process_conf"],
     ).rename("conf-ps")
     tx, tx_exh, param_df = estimate_tranform(
         im_ms_ps.data,
         im_conf_ps.data,
-        scal_init=dsdat["scal_init"],
-        scal_stp=5e-2,
-        scal_nstp=2,
-        trans_stp=(5, 5),
-        trans_nstp=(12, 12),
-        ang_stp=np.deg2rad(5),
-        ang_nstp=3,
-        lr=1e-3,
+        scal_init=param["scal_init"],
+        scal_stp=param["scal_stp"],
+        scal_nstp=param["scal_nstp"],
+        trans_stp=param["trans_stp"],
+        trans_nstp=param["trans_nstp"],
+        ang_stp=np.deg2rad(param["ang_stp"]),
+        ang_nstp=param["ang_nstp"],
+        lr=1,
     )
     im_ms_exh = xr.DataArray(
         apply_tx(im_ms, tx_exh, ref=im_conf.data, fill=np.nan),
