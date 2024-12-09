@@ -8,6 +8,7 @@ import tifffile as tiff
 import xarray as xr
 from aicsimageio import AICSImage
 from scipy.io import loadmat
+from tqdm.auto import tqdm
 
 from .utilities import normalize
 
@@ -21,7 +22,7 @@ def load_dataset(
     load_specs=True,
 ):
     ssdf = pd.read_csv(ss_csv).set_index(id_cols)
-    for idxs, ssrow in ssdf.iterrows():
+    for idxs, ssrow in tqdm(ssdf.iterrows(), total=len(ssdf)):
         ret_ds = dict()
         if load_temps:
             im_ms, im_conf = load_templates(
