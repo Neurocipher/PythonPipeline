@@ -1,3 +1,4 @@
+import copy
 import re
 from collections.abc import Iterable
 
@@ -125,7 +126,9 @@ def est_sim(
 
 def estimate_tranform(src, dst, **kwargs):
     tx_exh, param_exh = est_sim(src, dst, exhaustive=True, **kwargs)
-    tx_gd, param_gd = est_sim(src, dst, exhaustive=False, trans_init=tx_exh, **kwargs)
+    tx_gd, param_gd = est_sim(
+        src, dst, exhaustive=False, trans_init=copy.deepcopy(tx_exh), **kwargs
+    )
     param_exh["stage"] = "exhaustive"
     param_gd["stage"] = "gradient"
     return tx_gd, tx_exh, pd.concat([param_exh, param_gd], ignore_index=True)
