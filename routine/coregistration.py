@@ -87,6 +87,10 @@ def est_sim(
     #     numberOfIterations=niter,
     # )
     if exhaustive:
+        if not isinstance(trans_stp, Iterable):
+            trans_stp = (trans_stp, trans_stp)
+        if not isinstance(trans_nstp, Iterable):
+            trans_nstp = (trans_nstp, trans_nstp)
         reg.SetOptimizerAsExhaustive(
             [scal_nstp, ang_nstp, trans_nstp[0], trans_nstp[1]]
         )
