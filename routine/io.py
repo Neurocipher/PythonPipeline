@@ -132,15 +132,15 @@ def load_spectif(dpath, pat):
 
 def load_refmat(matfile: str):
     mat = loadmat(matfile)
-    return xr.DataArray(mat["hek"], dims=["fluo", "spec"]), xr.DataArray(
+    return xr.DataArray(mat["hek"], dims=["fluo", "channel"]), xr.DataArray(
         mat["PD"], dims=["dist", "fluo"], coords={"dist": ["raw", "norm"]}
     )
 
 
 def load_cellsmat(matfile: str):
     mat = loadmat(matfile)
-    return xr.DataArray(mat["cells_line"], dims=["unit", "spec"]), xr.DataArray(
-        mat["cells_n_line"], dims=["unit", "spec"]
+    return xr.DataArray(mat["cells_line"], dims=["unit", "channel"]), xr.DataArray(
+        mat["cells_n_line"], dims=["unit", "channel"]
     )
 
 

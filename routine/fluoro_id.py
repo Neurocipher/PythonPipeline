@@ -7,11 +7,11 @@ from sklearn.linear_model import LinearRegression
 
 def fit_spec(spec: xr.DataArray, spec_ref: xr.DataArray):
     lm = LinearRegression(fit_intercept=False)
-    lm.fit(spec_ref.transpose("spec", "fluo"), spec.transpose("spec", "unit"))
+    lm.fit(spec_ref.transpose("channel", "fluo"), spec.transpose("channel", "roi_id"))
     return xr.DataArray(
         lm.coef_,
-        dims=["unit", "fluo"],
-        coords={"unit": spec.coords["unit"], "fluo": spec_ref.coords["fluo"]},
+        dims=["roi_id", "fluo"],
+        coords={"roi_id": spec.coords["roi_id"], "fluo": spec_ref.coords["fluo"]},
     )
 
 
@@ -19,8 +19,8 @@ def beta_ztrans(beta: xr.DataArray):
     return xr.apply_ufunc(
         zscore,
         beta,
-        input_core_dims=[["unit"]],
-        output_core_dims=[["unit"]],
+        input_core_dims=[["roi_id"]],
+        output_core_dims=[["roi_id"]],
         vectorize=True,
     )
 
@@ -49,7 +49,7 @@ def classify_single_unit(udf: pd.DataFrame, zthres):
 
 def classify_units(df: pd.DataFrame, src=None, **kwargs):
     res = (
-        df.groupby("unit")
+        df.groupby("roi_id")
         .apply(classify_single_unit, include_groups=False, **kwargs)
         .reset_index()
     )

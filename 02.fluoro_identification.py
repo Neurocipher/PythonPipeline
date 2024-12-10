@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from routine.fluoro_id import (
     beta_ztrans,
@@ -11,10 +12,12 @@ from routine.fluoro_id import (
     max_agg_beta,
     merge_passes,
 )
-from routine.io import load_cellsmat, load_refmat
+from routine.io import load_dataset, load_refmat
 
+IN_SS_CSV = "./data/full/sessions.csv"
+IN_DPATH = "./data/full"
 IN_REF_PATH = "./data/ref/Detection_Constants.mat"
-IN_DPATH = "./data/cells/"
+IN_SPEC_PATH = "./intermediate/spectrum/"
 OUT_PATH = "./output/cell_labs"
 PARAM_ZTHRES = 1.5
 PARAM_NFLUO = 2
@@ -25,8 +28,14 @@ os.makedirs(OUT_PATH, exist_ok=True)
 
 # %% load data
 spec_ref, pdist = load_refmat(IN_REF_PATH)
-for cell_mat in filter(lambda fn: fn.endswith(".mat"), os.listdir(IN_DPATH)):
-    spec_raw, spec_norm = load_cellsmat(os.path.join(IN_DPATH, cell_mat))
+for (anm, ss), ds, ssrow in load_dataset(
+    IN_DPATH, IN_SS_CSV, load_temps=False, load_rois=False, load_specs=False
+):
+    dsname = "{}-{}".format(anm, ss)
+    spec_ds = xr.open_dataset(os.path.join(IN_SPEC_PATH, "{}.nc".format(dsname)))
+    spec_raw, spec_norm = spec_ds["spec_raw"].dropna("roi_id"), spec_ds[
+        "spec_norm"
+    ].dropna("roi_id")
     beta_raw = fit_spec(spec_raw, spec_ref)
     beta_norm = fit_spec(spec_norm, spec_ref)
     beta_raw_z = beta_ztrans(beta_raw)
@@ -34,12 +43,12 @@ for cell_mat in filter(lambda fn: fn.endswith(".mat"), os.listdir(IN_DPATH)):
     thres_raw = (
         PARAM_ZTHRES
         * pdist.sel(dist="raw")
-        / np.abs(beta_raw.mean("unit") / beta_raw.mean("unit").sum())
+        / np.abs(beta_raw.mean("roi_id") / beta_raw.mean("roi_id").sum())
     ).to_series()
     thres_norm = (
         PARAM_ZTHRES
         * pdist.sel(dist="norm")
-        / np.abs(beta_norm.mean("unit") / beta_norm.mean("unit").sum())
+        / np.abs(beta_norm.mean("roi_id") / beta_norm.mean("roi_id").sum())
     ).to_series()
     beta_z = max_agg_beta(beta_raw_z, beta_norm_z).to_dataframe().reset_index()
     beta_raw_z = beta_raw_z.rename("beta").to_dataframe().reset_index()
@@ -50,8 +59,8 @@ for cell_mat in filter(lambda fn: fn.endswith(".mat"), os.listdir(IN_DPATH)):
     labs = pd.concat([labs_p1, labs_p2_raw, labs_p2_norm], ignore_index=True)
     labs = labs[~labs["lab"].isin(PARAM_EXC_FLUO)]
     labs = (
-        labs.groupby("unit")
+        labs.groupby("roi_id")
         .apply(merge_passes, nfluo=PARAM_NFLUO, include_groups=False)
         .reset_index()
     )
-    labs.to_csv(os.path.join(OUT_PATH, "{}.csv".format(cell_mat.split("_")[0])))
+    labs.to_csv(os.path.join(OUT_PATH, "{}.csv".format(dsname)))
