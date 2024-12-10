@@ -20,6 +20,7 @@ def load_dataset(
     load_temps=True,
     load_rois=True,
     load_specs=True,
+    flip_rois=False,
 ):
     ssdf = pd.read_csv(ss_csv).set_index(id_cols)
     for idxs, ssrow in tqdm(ssdf.iterrows(), total=len(ssdf)):
@@ -35,6 +36,7 @@ def load_dataset(
             ret_ds["rois"] = load_roitif(
                 os.path.dirname(os.path.join(dpath, ssrow["rois"])),
                 os.path.basename(ssrow["rois"]),
+                flip=flip_rois,
             )
         if load_specs:
             ret_ds["specs"] = load_spectif(
@@ -74,12 +76,14 @@ def load_templates(im_ms, im_conf, flip=False, norm=True):
     )
 
 
-def load_roitif(dpath, pat):
+def load_roitif(dpath, pat, flip=False):
     rois = []
     for tf in os.listdir(dpath):
         ma = re.search(pat, tf)
         if ma is not None:
             roi = np.array(tiff.imread(os.path.join(dpath, tf)))
+            if flip:
+                roi = np.flip(roi, axis=[0, 1])
             roi = xr.DataArray(
                 roi,
                 dims=["height", "width"],

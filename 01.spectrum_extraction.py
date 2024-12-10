@@ -8,51 +8,44 @@ import holoviews as hv
 import xarray as xr
 
 from routine.coregistration import apply_tx
-from routine.io import load_czi, load_roimat
+from routine.io import load_dataset
 from routine.plotting import plotA_contour
 from routine.utilities import normalize
 
-DS = {
-    "21271R": {
-        "ds_path": "./data/demo/21271R",
-        "reg_ds": "./intermediate/co-registration/21271R.nc",
-        "tx": "./intermediate/co-registration/tx-21271R.pkl",
-        "transform_roi": False,
-    },
-    "21272R": {
-        "ds_path": "./data/demo/21272R",
-        "reg_ds": "./intermediate/co-registration/21272R.nc",
-        "tx": "./intermediate/co-registration/tx-21272R.pkl",
-        "transform_roi": False,
-    },
-    "25607": {
-        "ds_path": "./data/demo/25607",
-        "reg_ds": "./intermediate/co-registration/25607.nc",
-        "tx": "./intermediate/co-registration/tx-25607.pkl",
-        "transform_roi": True,
-    },
-}
+IN_DPATH = "./data/full/"
+IN_SS_CSV = "./data/full/sessions.csv"
+IN_REG_PATH = "./intermediate/co-registration/"
 OUT_PATH = "./intermediate/spectrum"
 FIG_PATH = "./figs/spectrum"
 PARAM_MED_WND = 3
-PARAM_TRANSFORM_ROI = False
+PARAM_SUMZ = False
+PARAM_TRANSFORM_ROI = True
+PARAM_FLIP_ROI = True
+PARAM_SKIP_EXISTING = False
 
 os.makedirs(OUT_PATH, exist_ok=True)
 os.makedirs(FIG_PATH, exist_ok=True)
-hv.notebook_extension("bokeh")
+hv.extension("bokeh")
 
 
 # %% load data and extract spectrums
-for dsname, dsdat in DS.items():
-    # load rois
-    reg_ds = xr.open_dataset(dsdat["reg_ds"])
+for (anm, ss), ds, ssrow in load_dataset(IN_DPATH, IN_SS_CSV, flip_rois=PARAM_FLIP_ROI):
+    # load data
+    dsname = "{}-{}".format(anm, ss)
+    if PARAM_SKIP_EXISTING and os.path.exists(
+        os.path.join(OUT_PATH, "{}.nc".format(dsname))
+    ):
+        continue
+    reg_ds = xr.open_dataset(os.path.join(IN_REG_PATH, "{}.nc".format(dsname)))
     im_ms = reg_ds["ms-raw"].dropna("height", how="all").dropna("width", how="all")
     im_conf = reg_ds["conf-raw"].dropna("height", how="all").dropna("width", how="all")
-    im_ref = im_ms if dsdat["transform_roi"] else im_conf
-    rois = load_roimat(os.path.join(dsdat["ds_path"], "ROIs.mat"), im_ref)
+    rois = ds["rois"]
+    ims_conf = ds["specs"]
     # transform roi
-    if dsdat["transform_roi"]:
-        with open(dsdat["tx"], "rb") as tx_file:
+    if PARAM_TRANSFORM_ROI:
+        with open(
+            os.path.join(IN_REG_PATH, "tx-{}.pkl".format(dsname)), "rb"
+        ) as tx_file:
             tx = pkl.load(tx_file)
         rois = xr.apply_ufunc(
             apply_tx,
@@ -71,7 +64,6 @@ for dsname, dsdat in DS.items():
     if nempty > 0:
         warnings.warn("{} ROIs empty in dataset {}".format(nempty, dsname))
     # load czi
-    ims_conf = load_czi(dsdat["ds_path"])
     ims_conf = xr.apply_ufunc(
         cv2.medianBlur,
         ims_conf,
@@ -81,14 +73,15 @@ for dsname, dsdat in DS.items():
         dask="parallelized",
         kwargs={"ksize": PARAM_MED_WND},
     )
-    ims_conf = ims_conf.sum("z").compute()
+    if PARAM_SUMZ:
+        ims_conf = ims_conf.sum("z").compute()
     # plot rois overlay
     ims_chns = ims_conf.groupby("channel_group").max("channel")
     im_dict = dict()
     for chn, chn_dat in ims_chns.groupby("channel_group", squeeze=False):
         im = plotA_contour(
             im=chn_dat.rename(chn).squeeze(),
-            A=rois,
+            A=rois.rename(roi_id="unit"),
             im_opts={
                 "frame_width": 400,
                 "aspect": chn_dat.sizes["width"] / chn_dat.sizes["height"],
