@@ -21,6 +21,7 @@ def load_dataset(
     load_rois=True,
     load_specs=True,
     flip_rois=False,
+    rois_accept_only=True,
 ):
     ssdf = pd.read_csv(ss_csv).set_index(id_cols)
     for idxs, ssrow in tqdm(ssdf.iterrows(), total=len(ssdf)):
@@ -35,11 +36,21 @@ def load_dataset(
             ret_ds["im_ms"] = im_ms
             ret_ds["im_conf"] = im_conf
         if load_rois:
-            ret_ds["rois"] = load_roitif(
+            rois = load_roitif(
                 os.path.dirname(os.path.join(dpath, ssrow["rois"])),
                 os.path.basename(ssrow["rois"]),
                 flip=flip_rois,
             )
+            if rois_accept_only:
+                roidf = pd.read_csv(
+                    os.path.join(
+                        dpath, os.path.dirname(ssrow["rois"]), "CellTraces-props.csv"
+                    )
+                )
+                rois = rois.sel(
+                    roi_id=np.array(roidf.set_index("Name")["Status"] == "accepted")
+                )
+            ret_ds["rois"] = rois
         if load_specs:
             ret_ds["specs"] = load_spectif(
                 os.path.dirname(os.path.join(dpath, ssrow["specs"])),
