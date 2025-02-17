@@ -29,7 +29,7 @@ os.makedirs(OUT_PATH, exist_ok=True)
 # %% load data
 spec_ref, pdist = load_refmat(IN_REF_PATH)
 for (anm, ss), ds, ssrow in load_dataset(
-    IN_DPATH, IN_SS_CSV, load_temps=False, load_rois=False, load_specs=False
+    IN_SS_CSV, IN_DPATH, load_temps=False, load_rois=False, load_specs=False
 ):
     dsname = "{}-{}".format(anm, ss)
     spec_ds = xr.open_dataset(os.path.join(IN_SPEC_PATH, "{}.nc".format(dsname)))

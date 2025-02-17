@@ -29,7 +29,7 @@ hv.extension("bokeh")
 
 
 # %% load data and extract spectrums
-for (anm, ss), ds, ssrow in load_dataset(IN_DPATH, IN_SS_CSV, flip_rois=PARAM_FLIP_ROI):
+for (anm, ss), ds, ssrow in load_dataset(IN_SS_CSV, IN_DPATH, flip_rois=PARAM_FLIP_ROI):
     # load data
     dsname = "{}-{}".format(anm, ss)
     if PARAM_SKIP_EXISTING and os.path.exists(
