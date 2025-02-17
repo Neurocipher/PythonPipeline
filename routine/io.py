@@ -14,8 +14,8 @@ from .utilities import normalize
 
 
 def load_dataset(
-    dpath,
     ss_csv,
+    dpath: str = None,
     id_cols=["animal", "session"],
     load_temps=True,
     load_rois=True,
@@ -24,6 +24,8 @@ def load_dataset(
 ):
     ssdf = pd.read_csv(ss_csv).set_index(id_cols)
     for idxs, ssrow in tqdm(ssdf.iterrows(), total=len(ssdf)):
+        if dpath is None:
+            yield idxs, ssrow
         ret_ds = dict()
         if load_temps:
             im_ms, im_conf = load_templates(
