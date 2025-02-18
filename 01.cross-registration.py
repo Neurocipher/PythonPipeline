@@ -117,7 +117,7 @@ for anm, anm_df in mapping.groupby(("meta", "animal")):
             np.stack(cur_rois, axis=0).mean(axis=0),
             dims=cur_rois[0].dims,
             coords=cur_rois[0].coords,
-        ).assign_coords(roi_id=mid)
+        ).assign_coords(roi_id=mid, animal=anm)
         master_rois.append(mroi)
     master_rois = xr.concat(master_rois, "roi_id")
     master_rois.rename("rois").to_dataset().to_netcdf(
