@@ -10,7 +10,7 @@ import xarray as xr
 import yaml
 from pydantic.v1.utils import deep_update
 
-from routine.coregistration import apply_tx, estimate_tranform, process_temp
+from routine.coregistration import apply_tx, estimate_tranform, process_temp, thres_roi
 from routine.io import load_dataset
 from routine.plotting import plot_ims, plotA_contour
 
@@ -21,6 +21,7 @@ IN_SS_CSV = "./data/full/sessions.csv"
 IN_PARAM_PATH = "./params/"
 PARAM_SKIP_EXISTING = True
 PARAM_FLIP_ROI = True
+PARAM_ROI_THRES = 0.75
 OUT_PATH = "./intermediate/co-registration"
 FIG_PATH = "./figs/co-registration"
 
@@ -147,6 +148,14 @@ for (anm, ss), ds, ssrow in load_dataset(IN_SS_CSV, IN_DPATH, flip_rois=PARAM_FL
     im_ms = reg_ds["ms-raw"].dropna("height", how="all").dropna("width", how="all")
     im_conf = reg_ds["conf-raw"].dropna("height", how="all").dropna("width", how="all")
     rois = ds["rois"]
+    rois = xr.apply_ufunc(
+        thres_roi,
+        rois,
+        input_core_dims=[["height", "width"]],
+        output_core_dims=[["height", "width"]],
+        vectorize=True,
+        kwargs={"th": PARAM_ROI_THRES},
+    )
     # transform roi
     with open(
         os.path.join(OUT_PATH, "transform", "tx-{}.pkl".format(dsname)), "rb"

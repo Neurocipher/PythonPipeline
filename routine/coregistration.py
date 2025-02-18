@@ -132,3 +132,9 @@ def estimate_tranform(src, dst, **kwargs):
     param_exh["stage"] = "exhaustive"
     param_gd["stage"] = "gradient"
     return tx_gd, tx_exh, pd.concat([param_exh, param_gd], ignore_index=True)
+
+
+def thres_roi(roi, th):
+    nzvals = roi[roi > 0]
+    thres = np.quantile(nzvals, th)
+    return np.where(roi > thres, roi, 0)
