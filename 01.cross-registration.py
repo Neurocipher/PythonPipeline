@@ -19,15 +19,17 @@ from routine.io import load_dataset
 
 IN_DPATH = "./intermediate/co-registration/rois/"
 IN_SS_CSV = "./data/full/sessions.csv"
-OUT_PATH = "./intermediate/cross-registration"
+INT_PATH = "./intermediate/cross-registration"
+OUT_PATH = "./output/mapping"
 FIG_PATH = "./figs/cross-registration"
 PARAM_SKIP_EXISTING = False
 PARAM_CENT_DIST = 10
 
+os.makedirs(INT_PATH, exist_ok=True)
 os.makedirs(OUT_PATH, exist_ok=True)
 
 # %% compute centroids
-if PARAM_SKIP_EXISTING and os.path.exists(os.path.join(OUT_PATH, "cents.feat")):
+if PARAM_SKIP_EXISTING and os.path.exists(os.path.join(INT_PATH, "cents.feat")):
     pass
 else:
     cents = []
@@ -40,14 +42,14 @@ else:
         cent["session"] = ss
         cents.append(cent)
     cents = pd.concat(cents, ignore_index=True)
-    cents.to_feather(os.path.join(OUT_PATH, "cents.feat"))
+    cents.to_feather(os.path.join(INT_PATH, "cents.feat"))
 
 # %% registration
-if PARAM_SKIP_EXISTING and os.path.exists(os.path.join(OUT_PATH, "mapping.feat")):
+if PARAM_SKIP_EXISTING and os.path.exists(os.path.join(INT_PATH, "mapping.feat")):
     pass
 else:
     cents = (
-        pd.read_feather(os.path.join(OUT_PATH, "cents.feat"))
+        pd.read_feather(os.path.join(INT_PATH, "cents.feat"))
         .rename(columns={"roi_id": "unit_id"})
         .sort_values(["animal", "session", "unit_id"])
         .set_index(["animal", "session", "unit_id"])
@@ -93,12 +95,15 @@ else:
         mappings.append(mapping)
     mappings = pd.concat(mappings, ignore_index=True)
     mappings = mappings.reindex(sorted(mappings.columns), axis="columns")
-    mappings.to_feather(os.path.join(OUT_PATH, "mapping.feat"))
+    mappings.to_feather(os.path.join(INT_PATH, "mapping.feat"))
+    mappings.droplevel(0, axis="columns").drop(columns=["distance"]).to_csv(
+        os.path.join(OUT_PATH, "mapping.csv"), index=False
+    )
 
 # %% generate master footprints
-outpath = os.path.join(OUT_PATH, "rois")
+outpath = os.path.join(INT_PATH, "rois")
 os.makedirs(outpath, exist_ok=True)
-mapping = pd.read_feather(os.path.join(OUT_PATH, "mapping.feat"))
+mapping = pd.read_feather(os.path.join(INT_PATH, "mapping.feat"))
 for anm, anm_df in mapping.groupby(("meta", "animal")):
     if PARAM_SKIP_EXISTING and os.path.exists(
         os.path.join(outpath, "{}.nc".format(anm))
