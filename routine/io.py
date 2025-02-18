@@ -27,36 +27,39 @@ def load_dataset(
     for idxs, ssrow in tqdm(ssdf.iterrows(), total=len(ssdf)):
         if dpath is None:
             yield idxs, ssrow
-        ret_ds = dict()
-        if load_temps:
-            im_ms, im_conf = load_templates(
-                os.path.join(dpath, ssrow["temp_ms"]),
-                os.path.join(dpath, ssrow["temp_conf"]),
-            )
-            ret_ds["im_ms"] = im_ms
-            ret_ds["im_conf"] = im_conf
-        if load_rois:
-            rois = load_roitif(
-                os.path.dirname(os.path.join(dpath, ssrow["rois"])),
-                os.path.basename(ssrow["rois"]),
-                flip=flip_rois,
-            )
-            if rois_accept_only:
-                roidf = pd.read_csv(
-                    os.path.join(
-                        dpath, os.path.dirname(ssrow["rois"]), "CellTraces-props.csv"
+        else:
+            ret_ds = dict()
+            if load_temps:
+                im_ms, im_conf = load_templates(
+                    os.path.join(dpath, ssrow["temp_ms"]),
+                    os.path.join(dpath, ssrow["temp_conf"]),
+                )
+                ret_ds["im_ms"] = im_ms
+                ret_ds["im_conf"] = im_conf
+            if load_rois:
+                rois = load_roitif(
+                    os.path.dirname(os.path.join(dpath, ssrow["rois"])),
+                    os.path.basename(ssrow["rois"]),
+                    flip=flip_rois,
+                )
+                if rois_accept_only:
+                    roidf = pd.read_csv(
+                        os.path.join(
+                            dpath,
+                            os.path.dirname(ssrow["rois"]),
+                            "CellTraces-props.csv",
+                        )
                     )
+                    rois = rois.sel(
+                        roi_id=np.array(roidf.set_index("Name")["Status"] == "accepted")
+                    )
+                ret_ds["rois"] = rois
+            if load_specs:
+                ret_ds["specs"] = load_spectif(
+                    os.path.dirname(os.path.join(dpath, ssrow["specs"])),
+                    os.path.basename(ssrow["specs"]),
                 )
-                rois = rois.sel(
-                    roi_id=np.array(roidf.set_index("Name")["Status"] == "accepted")
-                )
-            ret_ds["rois"] = rois
-        if load_specs:
-            ret_ds["specs"] = load_spectif(
-                os.path.dirname(os.path.join(dpath, ssrow["specs"])),
-                os.path.basename(ssrow["specs"]),
-            )
-        yield idxs, ret_ds, ssrow
+            yield idxs, ret_ds, ssrow
 
 
 def load_templates(im_ms, im_conf, flip=False, norm=True):
