@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import xarray as xr
+from tqdm.auto import tqdm
 
 from routine.fluoro_id import (
     beta_ztrans,
@@ -12,7 +13,7 @@ from routine.fluoro_id import (
     max_agg_beta,
     merge_passes,
 )
-from routine.io import load_dataset, load_refmat
+from routine.io import load_refmat
 
 IN_SS_CSV = "./data/full/sessions.csv"
 IN_DPATH = "./data/full"
@@ -25,14 +26,17 @@ PARAM_EXC_FLUO = []
 
 os.makedirs(OUT_PATH, exist_ok=True)
 
-
 # %% load data
 spec_ref, pdist = load_refmat(IN_REF_PATH)
-for (anm, ss), ds, ssrow in load_dataset(
-    IN_SS_CSV, IN_DPATH, load_temps=False, load_rois=False, load_specs=False
-):
-    dsname = "{}-{}".format(anm, ss)
-    spec_ds = xr.open_dataset(os.path.join(IN_SPEC_PATH, "{}.nc".format(dsname)))
+spec_files = list(filter(lambda fn: fn.endswith(".nc"), os.listdir(IN_SPEC_PATH)))
+for spec_f in tqdm(spec_files):
+    spec_ds = xr.open_dataset(os.path.join(IN_SPEC_PATH, spec_f))
+    try:
+        anm, ss = spec_ds.coords["animal"].item(), spec_ds.coords["session"].item()
+        dsname = "{}-{}".format(anm, ss)
+    except KeyError:
+        anm = spec_ds.coords["animal"].item()
+        dsname = anm
     spec_raw, spec_norm = spec_ds["spec_raw"].dropna("roi_id"), spec_ds[
         "spec_norm"
     ].dropna("roi_id")
