@@ -22,8 +22,8 @@ IN_SS_CSV = "./data/full/sessions.csv"
 INT_PATH = "./intermediate/cross-registration"
 OUT_PATH = "./output/mapping"
 FIG_PATH = "./figs/cross-registration"
-PARAM_SKIP_EXISTING = False
-PARAM_CENT_DIST = 10
+PARAM_SKIP_EXISTING = True
+PARAM_CENT_DIST = 20
 
 os.makedirs(INT_PATH, exist_ok=True)
 os.makedirs(OUT_PATH, exist_ok=True)
