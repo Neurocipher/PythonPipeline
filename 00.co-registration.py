@@ -21,7 +21,7 @@ IN_SS_CSV = "./data/full/sessions.csv"
 IN_PARAM_PATH = "./params/"
 PARAM_SKIP_EXISTING = True
 PARAM_FLIP_ROI = True
-PARAM_ROI_THRES = 0.75
+PARAM_ROI_THRES = 0.8
 OUT_PATH = "./intermediate/co-registration"
 FIG_PATH = "./figs/co-registration"
 
