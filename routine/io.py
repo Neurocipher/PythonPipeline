@@ -1,5 +1,6 @@
 import os
 import re
+import warnings
 
 import cv2
 import numpy as np
@@ -30,6 +31,11 @@ def load_dataset(
         else:
             ret_ds = dict()
             if load_temps:
+                if pd.isnull(ssrow["temp_ms"]) or pd.isnull(ssrow["temp_conf"]):
+                    warnings.warn(
+                        "Cannot load templates for {}. Skipping".format(str(idxs))
+                    )
+                    continue
                 im_ms, im_conf = load_templates(
                     os.path.join(dpath, ssrow["temp_ms"]),
                     os.path.join(dpath, ssrow["temp_conf"]),
@@ -37,6 +43,9 @@ def load_dataset(
                 ret_ds["im_ms"] = im_ms
                 ret_ds["im_conf"] = im_conf
             if load_rois:
+                if pd.isnull(ssrow["rois"]):
+                    warnings.warn("Cannot load ROIs for {}. Skipping".format(str(idxs)))
+                    continue
                 rois = load_roitif(
                     os.path.dirname(os.path.join(dpath, ssrow["rois"])),
                     os.path.basename(ssrow["rois"]),
@@ -55,6 +64,11 @@ def load_dataset(
                     )
                 ret_ds["rois"] = rois
             if load_specs:
+                if pd.isnull(ssrow["specs"]):
+                    warnings.warn(
+                        "Cannot load spectrum for {}. Skipping".format(str(idxs))
+                    )
+                    continue
                 ret_ds["specs"] = load_spectif(
                     os.path.dirname(os.path.join(dpath, ssrow["specs"])),
                     os.path.basename(ssrow["specs"]),

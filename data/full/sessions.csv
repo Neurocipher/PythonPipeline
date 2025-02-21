@@ -25,3 +25,4 @@ YAS22670L,Day2,YAS22670L/ZEISS/MAX_MAX_Z_405_0008lp.tif,YAS22670L/Day2/D2_Mean.t
 YAS22670L,Day3,YAS22670L/ZEISS/MAX_MAX_Z_405_0008lp.tif,YAS22670L/Day3/D3_Mean.tif,YAS22670L/Day3/Day3_(C\d+)\.tiff,YAS22670L/ZEISS/SUM_Z_(\d+)_.*\.tif,generic.yml;YAS22670L.yml
 YAS22670L,Day4,YAS22670L/ZEISS/MAX_MAX_Z_405_0008lp.tif,YAS22670L/Day4/D4_Mean.tif,YAS22670L/Day4/Day4_(C\d+)\.tiff,YAS22670L/ZEISS/SUM_Z_(\d+)_.*\.tif,generic.yml;YAS22670L.yml
 YAS22670L,Day5,YAS22670L/ZEISS/MAX_MAX_Z_405_0008lp.tif,YAS22670L/Day5/D5_Mean.tif,YAS22670L/Day5/Day5_(C\d+)\.tiff,YAS22670L/ZEISS/SUM_Z_(\d+)_.*\.tif,generic.yml;YAS22670L.yml
+bench,ArgoSlide,ArgoSlide/SUM_SUM_Lambda_405nm_350pin_zstack_8bit.tif,ArgoSlide/ProcessedInscMovie_DS2_MaxProject_FF_8bit.tif,,,generic.yml;argo.yml

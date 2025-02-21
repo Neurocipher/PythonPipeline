@@ -53,20 +53,26 @@ for (anm, ss), ds, ssrow in load_dataset(
     for pfile in param_files:
         with open(os.path.join(IN_PARAM_PATH, pfile)) as pf:
             param = deep_update(param, yaml.safe_load(pf))
-    ms_ps = xr.apply_ufunc(
-        process_temp,
-        ms_raw,
-        input_core_dims=[["height", "width"]],
-        output_core_dims=[["height", "width"]],
-        kwargs=param["process_ms"],
-    ).rename("ms-ps")
-    conf_ps = xr.apply_ufunc(
-        process_temp,
-        conf_raw,
-        input_core_dims=[["height", "width"]],
-        output_core_dims=[["height", "width"]],
-        kwargs=param["process_conf"],
-    ).rename("conf-ps")
+    if param["process_ms"] is not None:
+        ms_ps = xr.apply_ufunc(
+            process_temp,
+            ms_raw,
+            input_core_dims=[["height", "width"]],
+            output_core_dims=[["height", "width"]],
+            kwargs=param["process_ms"],
+        ).rename("ms-ps")
+    else:
+        ms_ps = ms_raw.rename("ms-ps")
+    if param["process_conf"] is not None:
+        conf_ps = xr.apply_ufunc(
+            process_temp,
+            conf_raw,
+            input_core_dims=[["height", "width"]],
+            output_core_dims=[["height", "width"]],
+            kwargs=param["process_conf"],
+        ).rename("conf-ps")
+    else:
+        conf_ps = conf_raw.rename("conf-ps")
     tx, tx_exh, param_df = estimate_tranform(
         ms_ps.data,
         conf_ps.data,
