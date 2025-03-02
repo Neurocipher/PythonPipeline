@@ -22,7 +22,7 @@ IN_SS_CSV = "./data/full/sessions.csv"
 INT_PATH = "./intermediate/cross-registration"
 OUT_PATH = "./output/mapping"
 FIG_PATH = "./figs/cross-registration"
-PARAM_SKIP_EXISTING = True
+PARAM_SKIP_EXISTING = False
 PARAM_CENT_DIST = 20
 
 os.makedirs(INT_PATH, exist_ok=True)
@@ -36,7 +36,13 @@ else:
     for (anm, ss), ssrow in load_dataset(IN_SS_CSV):
         # load data
         dsname = "{}-{}".format(anm, ss)
-        rois = xr.open_dataset(os.path.join(IN_DPATH, "{}.nc".format(dsname)))["rois"]
+        try:
+            rois = xr.open_dataset(os.path.join(IN_DPATH, "{}.nc".format(dsname)))[
+                "rois"
+            ]
+        except FileNotFoundError:
+            warnings.warn("Skipping {}".format(dsname))
+            continue
         cent = centroid(rois)
         cent["animal"] = anm
         cent["session"] = ss
