@@ -269,16 +269,3 @@ for (anm, ss), ds, ssrow in load_dataset(IN_SS_CSV, IN_DPATH, flip_rois=PARAM_FL
     )
     hv.save(fig, os.path.join(figpath, "{}.html".format(dsname)))
     rois.to_dataset().to_netcdf(os.path.join(outpath, "{}.nc".format(dsname)))
-
-# %% compute correlation across ds
-for ds1_name, ds2_name in itt.product(DS.keys(), repeat=2):
-    ds1 = xr.open_dataset(os.path.join(OUT_PATH, "{}.nc".format(ds1_name)))
-    ds2 = xr.open_dataset(os.path.join(OUT_PATH, "{}.nc".format(ds2_name)))
-    im1 = ds1["ms-reg"].dropna("width", how="all").dropna("height", how="all")
-    im2 = ds2["conf-raw"].dropna("width", how="all").dropna("height", how="all")
-    if (
-        im1.sizes["height"] == im2.sizes["height"]
-        and im1.sizes["width"] == im2.sizes["width"]
-    ):
-        corr = np.corrcoef(np.array(im1).reshape(-1), np.array(im2).reshape(-1))[0, 1]
-        print("{}-{}: {:.3f}".format(ds1_name, ds2_name, corr))
