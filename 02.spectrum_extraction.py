@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 
 from routine.io import load_spectif
 from routine.plotting import plotA_contour
-from routine.utilities import normalize
+from routine.utilities import normalize, split_path
 
 IN_DPATH = "./data/full/"
 IN_SS_CSV = "./data/full/sessions.csv"
@@ -38,9 +38,8 @@ for r in tqdm(roi_files):
         anm = rois.coords["animal"].item()
         dsname = anm
     spec = ss_csv.loc[anm]["specs"].unique().item()
-    ims_conf = load_spectif(
-        os.path.dirname(os.path.join(IN_DPATH, spec)), os.path.basename(spec)
-    )
+    dname, basename = split_path(os.path.join(IN_DPATH, spec))
+    ims_conf = load_spectif(dname, basename)
     # process czi
     ims_conf = xr.apply_ufunc(
         cv2.medianBlur,
