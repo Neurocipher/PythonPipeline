@@ -1,6 +1,7 @@
 channels:
   - conda-forge
 dependencies:
+  - python==3.12
   - numpy
   - scipy
   - opencv
@@ -8,15 +9,15 @@ dependencies:
   - scikit-learn
   - jupyter
   - xarray
-  - tifffile
+  - tifffile==2024.9.20
   - plotly
-  - simpleitk
+  - simpleitk==2.4.0
+  - libitk==5.4.0
   - netcdf4
   - holoviews
-  - aicsimageio
+  - aicsimageio==4.10.0
   - fsspec
   - pip
   - openpyxl
-  - pydantic
-  - pip:
-      - aicspylibczi
+  - pydantic==2.10
+  - aicspylibczi==3.2.0
