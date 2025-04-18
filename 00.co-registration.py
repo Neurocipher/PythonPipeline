@@ -252,7 +252,12 @@ for (anm, ss), ds, ssrow in load_dataset(IN_SS_CSV, IN_DPATH, flip_rois=PARAM_FL
         kwargs={"tx": tx, "ref": conf_raw},
     )
     rois = rois.rename({"height_new": "height", "width_new": "width"}).assign_coords(
-        {"height": conf_raw.coords["height"], "width": conf_raw.coords["width"]}
+        {
+            "height": conf_raw.coords["height"],
+            "width": conf_raw.coords["width"],
+            "animal": anm,
+            "session": ss,
+        }
     )
     nempty = (rois.max(["height", "width"]) == 0).sum().item()
     if nempty > 0:

@@ -5,6 +5,7 @@ import cv2
 import holoviews as hv
 import pandas as pd
 import xarray as xr
+import numpy as np
 from tqdm.auto import tqdm
 
 from routine.io import load_spectif
@@ -37,7 +38,7 @@ for r in tqdm(roi_files):
     except KeyError:
         anm = rois.coords["animal"].item()
         dsname = anm
-    spec = ss_csv.loc[anm]["specs"].unique().item()
+    spec = np.unique(np.atleast_1d(ss_csv.loc[anm]["specs"])).item()
     dname, basename = split_path(os.path.join(IN_DPATH, spec))
     ims_conf = load_spectif(dname, basename)
     # process czi
