@@ -11,7 +11,7 @@ from aicsimageio import AICSImage
 from scipy.io import loadmat
 from tqdm.auto import tqdm
 
-from .utilities import normalize
+from .utilities import normalize, split_path
 
 
 def load_dataset(
@@ -22,7 +22,7 @@ def load_dataset(
     load_rois=True,
     load_specs=True,
     flip_rois=False,
-    rois_accept_only=True,
+    rois_accept_only=False,
 ):
     ssdf = pd.read_csv(ss_csv).set_index(id_cols)
     for idxs, ssrow in tqdm(ssdf.iterrows(), total=len(ssdf)):
@@ -46,19 +46,10 @@ def load_dataset(
                 if pd.isnull(ssrow["rois"]):
                     warnings.warn("Cannot load ROIs for {}. Skipping".format(str(idxs)))
                     continue
-                rois = load_roitif(
-                    os.path.dirname(os.path.join(dpath, ssrow["rois"])),
-                    os.path.basename(ssrow["rois"]),
-                    flip=flip_rois,
-                )
+                dname, basename = split_path(os.path.join(dpath, ssrow["rois"]))
+                rois = load_roitif(dname, basename, flip=flip_rois)
                 if rois_accept_only:
-                    roidf = pd.read_csv(
-                        os.path.join(
-                            dpath,
-                            os.path.dirname(ssrow["rois"]),
-                            "CellTraces-props.csv",
-                        )
-                    )
+                    roidf = pd.read_csv(os.path.join(dname, "CellTraces-props.csv"))
                     rois = rois.sel(
                         roi_id=np.array(roidf.set_index("Name")["Status"] == "accepted")
                     )
@@ -69,10 +60,8 @@ def load_dataset(
                         "Cannot load spectrum for {}. Skipping".format(str(idxs))
                     )
                     continue
-                ret_ds["specs"] = load_spectif(
-                    os.path.dirname(os.path.join(dpath, ssrow["specs"])),
-                    os.path.basename(ssrow["specs"]),
-                )
+                dname, basename = split_path(os.path.join(dpath, ssrow["specs"]))
+                ret_ds["specs"] = load_spectif(dname, basename)
             yield idxs, ret_ds, ssrow
 
 

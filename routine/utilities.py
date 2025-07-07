@@ -13,3 +13,8 @@ def normalize(a, q=(0, 1)):
 def compute_corr(a, b):
     a, b = np.nan_to_num(a).reshape(-1), np.nan_to_num(b).reshape(-1)
     return np.corrcoef(a, b)[0, 1]
+
+
+def split_path(p):
+    plst = p.split("/")
+    return "/".join(plst[:-1]), plst[-1]

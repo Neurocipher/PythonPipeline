@@ -5,11 +5,12 @@ import cv2
 import holoviews as hv
 import pandas as pd
 import xarray as xr
+import numpy as np
 from tqdm.auto import tqdm
 
 from routine.io import load_spectif
 from routine.plotting import plotA_contour
-from routine.utilities import normalize
+from routine.utilities import normalize, split_path
 
 IN_DPATH = "./data/full/"
 IN_SS_CSV = "./data/full/sessions.csv"
@@ -37,10 +38,9 @@ for r in tqdm(roi_files):
     except KeyError:
         anm = rois.coords["animal"].item()
         dsname = anm
-    spec = ss_csv.loc[anm]["specs"].unique().item()
-    ims_conf = load_spectif(
-        os.path.dirname(os.path.join(IN_DPATH, spec)), os.path.basename(spec)
-    )
+    spec = np.unique(np.atleast_1d(ss_csv.loc[anm]["specs"])).item()
+    dname, basename = split_path(os.path.join(IN_DPATH, spec))
+    ims_conf = load_spectif(dname, basename)
     # process czi
     ims_conf = xr.apply_ufunc(
         cv2.medianBlur,
